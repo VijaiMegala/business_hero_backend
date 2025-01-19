@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "rm -rf dist && tsc",
+    "build": "rm -rf dist && tsc && copyfiles -u 1 config/**/*.js dist/config",
     "start": "node ./dist/src/index.js",
     "dev": "tsnd --transpile-only --respawn --exit-child src/index.ts",
     "migrate": "npx sequelize-cli db:migrate --env production",

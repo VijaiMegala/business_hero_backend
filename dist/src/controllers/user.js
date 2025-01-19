@@ -17,25 +17,34 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET_KEY || "default_secret_key";
 const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION || "7d";
-const userDB = models_1.default.User;
+models_1.default.sequelize
+    .authenticate()
+    .then(() => {
+    console.log("Database connected successfully");
+})
+    .catch((err) => {
+    console.error("Error connecting to the database:", err);
+});
+const userModal = models_1.default.User;
 class UserController {
     addUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log("I am called");
             try {
-                const { username, email, password, age } = req.body;
-                const userExists = yield userDB.findOne({
+                const { username, email, password } = req.body;
+                const userExists = yield userModal.findOne({
                     where: { email }
                 });
+                console.log(userExists);
                 if (userExists) {
                     return res.status(400).send('Email is already associated with an account');
                 }
                 const pass = yield bcryptjs_1.default.hash(password, 10);
-                const newUser = yield userDB.create({
+                const newUser = yield userModal.create({
                     username,
                     email,
-                    age,
                     password: pass,
                 });
                 res.status(201).json({
@@ -44,12 +53,11 @@ class UserController {
                         id: newUser.id,
                         username: newUser.username,
                         email: newUser.email,
-                        age: newUser.age,
                     },
                 });
             }
             catch (error) {
-                res.status(500).json({ error: "error" });
+                res.status(500).json({ error: "error in user creation" });
             }
         });
     }
@@ -58,15 +66,15 @@ class UserController {
             try {
                 const userName = req.body.username;
                 const userPassword = req.body.password;
-                const user = yield userDB.findOne({ where: { username: userName } });
+                const user = yield userModal.findOne({ where: { username: userName } });
                 if (!user) {
-                    return res.status(404).json('username not found');
+                    return res.status(404).json('user not registered');
                 }
                 const passwordValid = yield bcryptjs_1.default.compare(userPassword, user.password);
                 if (passwordValid == false) {
-                    return res.status(404).json('Incorrect email and password combination');
+                    return res.status(404).json('Incorrect email or password combination');
                 }
-                const token = jsonwebtoken_1.default.sign({ id: user.id, username: user.username }, JWT_SECRET, {
+                const token = jsonwebtoken_1.default.sign({ userId: user.id, username: user.username }, JWT_SECRET, {
                     expiresIn: JWT_REFRESH_EXPIRATION
                 });
                 res.status(200).send({
@@ -77,7 +85,7 @@ class UserController {
                 });
             }
             catch (error) {
-                return res.status(500).send('Sign in error');
+                return res.status(500).send('user sign in error');
             }
         });
     }

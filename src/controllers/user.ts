@@ -27,7 +27,6 @@ class UserController {
       const userExists = await userModal.findOne({
         where: { email }
       });
-      console.log(userExists)
       if (userExists) {
         return res.status(400).send('Email is already associated with an account');
       }

@@ -13,26 +13,65 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const models_1 = __importDefault(require("../../models"));
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const taskDB = models_1.default.Task;
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key";
+const taskModal = models_1.default.Task;
 class TaskController {
     createTask(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
             try {
-                const token = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(' ')[1]; // Bearer <token>
-                if (!token) {
-                    return res.status(401).json({ error: 'Access denied. No token provided.' });
-                }
-                const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET); // Log payload object in terminal
-                const user_id = decoded.id;
                 const { title, description, status } = req.body;
-                const newTask = yield taskDB.create({ title, description, status, user_id });
+                const userId = req.userId;
+                const newTask = yield taskModal.create({ title, description, status, user_id: userId });
                 res.status(201).json(newTask);
             }
             catch (error) {
-                res.status(500).json({ error: "error" });
+                res.status(500).json({ err: "Error in Task Creation", error });
+            }
+        });
+    }
+    getTasks(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const userId = req.userId;
+                const getUserTasks = yield taskModal.findAll({
+                    where: { user_id: userId, deletedAt: null }
+                });
+                res.status(201).json(getUserTasks);
+            }
+            catch (error) {
+                console.log(error);
+                res.status(500).json({ err: "Error in fetching User Tasks" });
+            }
+        });
+    }
+    updateTask(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { title, description, status, taskId } = req.body;
+                let dataToUpdate = {};
+                if (title)
+                    dataToUpdate['title'] = title;
+                if (description)
+                    dataToUpdate['description'] = description;
+                if (status)
+                    dataToUpdate['status'] = status;
+                const updateTask = yield taskModal.update(dataToUpdate, { where: { id: taskId } });
+                res.status(201).json(updateTask[0] == 1 ? "Task updated" : "Task not updated");
+            }
+            catch (error) {
+                res.status(500).json({ err: "Error in updating User Task" });
+            }
+        });
+    }
+    deleteTask(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { taskId } = req.body;
+                const deleteTask = yield taskModal.destroy({ where: { id: taskId } });
+                res.status(201).json(deleteTask == 1 ? "Task deleted" : "Task not deleted");
+            }
+            catch (error) {
+                console.log(error);
+                res.status(500).json({ err: "Error in user task deletion" });
             }
         });
     }
