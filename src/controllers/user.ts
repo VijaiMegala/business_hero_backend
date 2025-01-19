@@ -8,6 +8,14 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET_KEY || "default_secret_key";
 const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION || "7d";
 
+db.sequelize
+  .authenticate()
+  .then(() => {
+    console.log("Database connected successfully");
+  })
+  .catch((err: any) => {
+    console.error("Error connecting to the database:", err);
+  });
 
 const userModal = db.User;
 
@@ -19,6 +27,7 @@ class UserController {
       const userExists = await userModal.findOne({
         where: { email }
       });
+      console.log(userExists)
       if (userExists) {
         return res.status(400).send('Email is already associated with an account');
       }
